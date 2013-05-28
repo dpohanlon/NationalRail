@@ -12,6 +12,8 @@
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graphviz.hpp>
 
+#include <boost/optional.hpp>
+
 #include "Parsers/RouteParser.h"
 #include "Records/RouteRecord.h"
 
@@ -51,6 +53,24 @@ void addAdj(map<string, set<string> > & adj, vector<string> stations)
             if(stations[i] != stations[j]) add(adj, stations[i], stations[j]);
         }
     }
+}
+
+Vertex addVertex(Graph & g, map<string, Vertex> & vs, string key)
+{
+    Vertex v;
+    
+    // if in map
+    if(vs.find(key) != vs.end()){
+        // use map vertex
+        v = vs[key];
+    }
+    else{
+        // else make a new vertex + add to map, graph
+        v = boost::add_vertex(g);
+        vs.insert(make_pair(key, v));
+        g[v].name = key;
+    }
+    return v;
 }
 
 int main(int argc, char const *argv[])
@@ -97,32 +117,8 @@ int main(int argc, char const *argv[])
 
     for(pair<string, set<string> > o : adj){
         for(string i : o.second){
-            Vertex v1;
-            Vertex v2;
-
-            // if in map
-            if(vs.find(o.first) != vs.end()){
-                // use map vertex
-                v1 = vs[o.first];
-            }
-            else{
-                // else make a new vertex + add to map, graph
-                v1 = boost::add_vertex(g);
-                vs.insert(make_pair(o.first, v1));
-                g[v1].name = o.first;
-            }
-
-            // if in map
-            if(vs.find(i) != vs.end()){
-                // use map vertex
-                v2 = vs[i];
-            }
-            else{
-                // else make a new vertex + add to map, graph
-                v2 = boost::add_vertex(g);
-                vs.insert(make_pair(i, v2));
-                g[v2].name = i;
-            }
+            Vertex v1 = addVertex(g, vs, o.first);
+            Vertex v2 = addVertex(g, vs, i);
 
             boost::add_edge(v1, v2, g);
         }
