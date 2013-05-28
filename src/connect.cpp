@@ -12,7 +12,7 @@
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graphviz.hpp>
 
-#include <boost/optional.hpp>
+#include "Utils/MapUtils.hpp"
 
 #include "Parsers/RouteParser.h"
 #include "Records/RouteRecord.h"
@@ -32,25 +32,19 @@ typedef boost::adjacency_list< boost::vecS,
                                boost::vecS,
                                boost::undirectedS,
                                Data > Graph;
+
 typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
 
-void add(map<string, set<string> > & adj, string key, string value)
-{
-    map<string, set<string> >::iterator l = adj.find(key);
-    if(l != adj.end()){
-        (l->second).insert(value);
-    }
-    else{
-        set<string> tmp = { value };
-        adj.insert(make_pair(key, tmp));
-    }
-}
 
-void addAdj(map<string, set<string> > & adj, vector<string> stations)
+void addAdj(map<string, set<string> > & adj, vector<string> & stations)
 {
     for(int i = 0; i < stations.size(); i++){
         for(int j = 0; j < stations.size(); j++){
-            if(stations[i] != stations[j]) add(adj, stations[i], stations[j]);
+            if(stations[i] != stations[j]){
+                mapUtils::insertWith(adj, stations[i], stations[j],
+                    [](set<string> & vs, string & s){ vs.insert(s); }
+                );
+            }
         }
     }
 }
@@ -58,7 +52,7 @@ void addAdj(map<string, set<string> > & adj, vector<string> stations)
 Vertex addVertex(Graph & g, map<string, Vertex> & vs, string key)
 {
     Vertex v;
-    
+
     // if in map
     if(vs.find(key) != vs.end()){
         // use map vertex
@@ -70,16 +64,15 @@ Vertex addVertex(Graph & g, map<string, Vertex> & vs, string key)
         vs.insert(make_pair(key, v));
         g[v].name = key;
     }
+    
     return v;
 }
 
 int main(int argc, char const *argv[])
 {
     RouteParser routeParser("ttf078/TTISF078.MCA");
-    // MSNParser   stationParser("test.MSN");
 
     vector<unique_ptr<RouteRecord> > routes(move(routeParser.routes));
-    // vector<unique_ptr<StationRecord> > stations(move(stationParser.stations));
 
     map<string, set<string> > adj;
 
